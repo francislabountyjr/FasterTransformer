@@ -211,7 +211,7 @@ __global__ void softmax_kernel_v4(T* qk_buf_,
             float qk = static_cast<float>(qk_buf_src[qk_offset]);
             float mask_val = static_cast<float>(ldg(&attr_mask[mask_offset]));
 
-            mask_val = (1.0f - mask_val) * -10000.0f;
+            mask_val = (1.0f - mask_val) * local_max;
 
             data[i] = qk * static_cast<float>(scalar) + mask_val;
             local_max = fmax(local_max, data[i]);
@@ -263,7 +263,7 @@ __global__ void softmax_kernel_v4_half2(
 
             T2 qk = qk_buf_half2[qk_offset];
             T2 mask_val = ldg(&attr_mask_half2[mask_offset]);
-            mask_val = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val), float2type2<T2>(-10000.0f));
+            mask_val = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val), float2type2<T2>(local_max));
 
             data[i] = hadd2<T2>(hmul2<T2>(qk, type2type2<T, T2>(scalar)), mask_val);
 
@@ -342,7 +342,7 @@ __global__ void softmax_kernel_v5_half2(
 
 #pragma unroll
             for (int j = 0; j < NUM; j++) {
-                mask_val[j] = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val[j]), float2type2<T2>(-10000.0f));
+                mask_val[j] = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val[j]), float2type2<T2>(local_max[j]));
             }
 
 #pragma unroll

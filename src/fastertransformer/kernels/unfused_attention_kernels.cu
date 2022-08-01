@@ -202,7 +202,7 @@ __global__ void softmax_kernel_v4(T* qk_buf_,
         float data[ITEMS_PER_THREAD];
         int qk_offset;
         __shared__ float s_mean, s_max;
-        float local_max = -FLT_MAX; //1e20f;
+        float local_max = -1e20f;
         for (int i = 0; blockDim.x * i + threadIdx.x < seq_len; i++) {
             qk_offset =
                 ((blockIdx.y * head_num + blockIdx.z) * seq_len + seq_id) * seq_len + blockDim.x * i + threadIdx.x;
@@ -211,7 +211,7 @@ __global__ void softmax_kernel_v4(T* qk_buf_,
             float qk = static_cast<float>(qk_buf_src[qk_offset]);
             float mask_val = static_cast<float>(ldg(&attr_mask[mask_offset]));
 
-            mask_val = (1.0f - mask_val) * -FLT_MAX;
+            mask_val = (1.0f - mask_val) * -10000.0f;
 
             data[i] = qk * static_cast<float>(scalar) + mask_val;
             local_max = fmax(local_max, data[i]);
@@ -255,7 +255,7 @@ __global__ void softmax_kernel_v4_half2(
         T2 data[ITEMS_PER_THREAD];
         int qk_offset;
         __shared__ float s_mean, s_max;
-        float local_max = -FLT_MAX; //1e20f;
+        float local_max = -1e20f;
         for (int i = 0; blockDim.x * i + threadIdx.x < (seq_len / 2) && i < ITEMS_PER_THREAD; i++) {
             qk_offset = ((blockIdx.y * head_num + blockIdx.z) * seq_len + seq_id) * (seq_len / 2) + blockDim.x * i
                         + threadIdx.x;
@@ -263,7 +263,7 @@ __global__ void softmax_kernel_v4_half2(
 
             T2 qk = qk_buf_half2[qk_offset];
             T2 mask_val = ldg(&attr_mask_half2[mask_offset]);
-            mask_val = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val), float2type2<T2>(-FLT_MAX));
+            mask_val = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val), float2type2<T2>(-10000.0f));
 
             data[i] = hadd2<T2>(hmul2<T2>(qk, type2type2<T, T2>(scalar)), mask_val);
 
@@ -315,7 +315,7 @@ __global__ void softmax_kernel_v5_half2(
         float local_max[NUM];
 #pragma unroll
         for (int j = 0; j < NUM; j++) {
-            local_max[j] = -FLT_MAX;//1e20f;
+            local_max[j] = -1e20f;
         }
 
         for (int i = 0; blockDim.x * i + threadIdx.x < (seq_len / 2) && i < ITEMS_PER_THREAD; i++) {
@@ -342,7 +342,7 @@ __global__ void softmax_kernel_v5_half2(
 
 #pragma unroll
             for (int j = 0; j < NUM; j++) {
-                mask_val[j] = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val[j]), float2type2<T2>(-FLT_MAX));
+                mask_val[j] = hmul2<T2>(hsub2<T2>(float2type2<T2>(1.0f), mask_val[j]), float2type2<T2>(-10000.0f));
             }
 
 #pragma unroll

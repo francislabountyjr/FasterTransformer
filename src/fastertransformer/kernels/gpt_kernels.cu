@@ -327,7 +327,7 @@ __global__ void buildDecoderAttentionMaskKernel(T* attention_mask, const int* se
     for (int i = threadIdx.x; i < max_seq_len * max_seq_len; i += blockDim.x) {
         int row_id = i / max_seq_len;
         int col_id = i % max_seq_len;
-        if (col_id >= max_seq_len - row_id - 1 && col_id >= max_seq_len - length) { // if (row_id < length && col_id <= row_id) {
+        if (row_id > max_seq_len - length - 1 && col_id >= max_seq_len - length && col_id <= row_id) { // if (row_id < length && col_id <= row_id) {
             attention_mask[i] = (T)(1.0f);
         }
         else {
